@@ -1,1 +1,11 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-public-sans: 'Public Sans', sans-serif;
+}
+
+body {
+  font-family: var(--font-public-sans);
+}
