@@ -4,6 +4,7 @@ export const currentUser: ShopProfile = {
   name: "Mama Tolu",
   shopName: "Mama Tolu Provisions",
   avatar: "https://i.pravatar.cc/150?u=mama-tolu",
+  phone: "+234 803 123 4567",
 };
 
 export const mockSettings: AppSettings = {

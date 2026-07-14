@@ -1,14 +1,48 @@
 "use client";
-import { mockDebts } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import ListRow from "@/components/ListRow";
 import PriceRangeBar from "@/components/PriceRangeBar";
 import StatusPill from "@/components/StatusPill";
+import { DebtEntry } from "@/lib/types";
+import { fetchDebt, updateDebtStatus } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function DebtDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const debt = mockDebts.find(d => d.id === params.id) || mockDebts[0];
+  const [debt, setDebt] = useState<DebtEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDebt(params.id)
+      .then(setDebt)
+      .catch(() => setError("Couldn't load this debt. Is the backend running on localhost:4000?"))
+      .finally(() => setLoading(false));
+  }, [params.id]);
+
+  async function handleMarkPaid() {
+    if (!debt || updating) return;
+    setUpdating(true);
+    try {
+      const updated = await updateDebtStatus(debt.id, "PAID");
+      setDebt(updated);
+    } catch {
+      setError("Couldn't update this debt right now.");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="px-5 py-6 text-on-surface-variant text-body-md">Loading...</div>;
+  }
+
+  if (error || !debt) {
+    return <div className="px-5 py-6 text-error text-body-md">{error ?? "Debt not found."}</div>;
+  }
+
   const isPaid = debt.status === 'PAID';
 
   return (
@@ -79,7 +113,10 @@ export default function DebtDetailPage({ params }: { params: { id: string } }) {
       </section>
 
       <div className="fixed bottom-24 left-5 right-5 space-y-3">
-        <Button label="✓ Paid in Full" />
+        <Button
+          label={isPaid ? "✓ Paid in Full" : updating ? "Saving..." : "Mark Paid in Full"}
+          onClick={handleMarkPaid}
+        />
         <Button label="Add Payment" variant="outline" />
       </div>
     </div>

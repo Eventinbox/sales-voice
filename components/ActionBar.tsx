@@ -11,7 +11,7 @@ interface ActionBarProps {
 
 export default function ActionBar({ value, onChange, onSend, onRecordSale, onNewDebt }: ActionBarProps) {
   return (
-    <div className="fixed inset-x-0 bottom-20 max-w-md mx-auto px-5 pb-5 bg-gradient-to-t from-background via-background to-transparent">
+    <div className="px-5 pb-5 pt-2 bg-gradient-to-t from-background via-background to-transparent md:pb-6">
       <div className="flex items-center gap-2 mb-4">
         <div className="flex-1 h-[56px] bg-surface-container rounded-full px-4 flex items-center gap-3 border border-outline-variant">
           <input

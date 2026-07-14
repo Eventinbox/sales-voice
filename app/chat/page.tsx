@@ -1,48 +1,45 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { mockMessages, currentUser } from "@/lib/mock-data";
+import { currentUser } from "@/lib/mock-data";
 import { Message } from "@/lib/types";
-import { formatTime } from "@/lib/utils";
+import { fetchMessages, sendMessage } from "@/lib/api";
 import ChatBubble from "@/components/ChatBubble";
 import ActionBar from "@/components/ActionBar";
 
-let localIdCounter = 0;
-
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchMessages()
+      .then(setMessages)
+      .catch(() => setError("Couldn't reach the backend. Is it running on localhost:4000?"))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function handleSend() {
+  async function handleSend() {
     const trimmed = inputValue.trim();
-    if (!trimmed) return;
+    if (!trimmed || sending) return;
 
-    const vendorMessage: Message = {
-      id: `local-${++localIdCounter}`,
-      sender: 'vendor',
-      text: trimmed,
-      timestamp: formatTime(),
-      type: 'text',
-    };
-    setMessages((prev) => [...prev, vendorMessage]);
     setInputValue("");
-
-    // Simulated acknowledgment only — real sale/debt parsing happens
-    // server-side via the Gemma function-calling layer, not here.
-    setTimeout(() => {
-      const assistantReply: Message = {
-        id: `local-${++localIdCounter}`,
-        sender: 'assistant',
-        text: "Got it! I've noted that down for you.",
-        timestamp: formatTime(),
-        type: 'text',
-      };
-      setMessages((prev) => [...prev, assistantReply]);
-    }, 700);
+    setSending(true);
+    try {
+      const { vendorMessage, assistantMessage } = await sendMessage(trimmed);
+      setMessages((prev) => [...prev, vendorMessage, assistantMessage]);
+    } catch {
+      setError("Message didn't send — check the backend is running.");
+      setInputValue(trimmed); // give the text back so nothing's lost
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -57,11 +54,17 @@ export default function ChatPage() {
 
       <div className="flex justify-center mb-6">
         <span className="px-4 py-1 bg-surface-container-high rounded-full text-xs font-bold text-on-surface-variant">
-          Today, July 11
+          Today
         </span>
       </div>
 
       <div className="px-5 flex-1 overflow-y-auto space-y-2 pb-40">
+        {loading && (
+          <p className="text-center text-on-surface-variant text-body-md">Loading conversation...</p>
+        )}
+        {error && (
+          <p className="text-center text-error text-body-md">{error}</p>
+        )}
         {messages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} />
         ))}
