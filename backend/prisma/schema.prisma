@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Message {
+  id                 String   @id @default(cuid())
+  sender             String // "assistant" | "vendor"
+  text               String
+  type               String   @default("text") // "text" | "confirmation"
+  confirmationAmount String?
+  createdAt          DateTime @default(now())
+}
+
+model Sale {
+  id        String   @id @default(cuid())
+  item      String
+  amount    Int
+  buyerName String?
+  createdAt DateTime @default(now())
+}
+
+// NOTE: `type` here matches the frontend's DebtEntry.type field exactly
+// ("customer" | "supplier") — this was the naming ambiguity flagged
+// earlier; keeping both sides in sync avoids a mapping layer.
+model DebtEntry {
+  id         String   @id @default(cuid())
+  personName String
+  item       String
+  amount     Int
+  type       String // "customer" | "supplier"
+  status     String   @default("UNPAID") // "PAID" | "UNPAID"
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+model PriceBenchmark {
+  id             String @id @default(cuid())
+  item           String @unique
+  currentPrice   Int
+  minMarketPrice Int
+  maxMarketPrice Int
+  trend          String @default("stable") // "up" | "down" | "stable"
+}
