@@ -1,33 +1,54 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/lib/profile";
 import Button from "@/components/Button";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { profile, updateProfile } = useProfile();
+  const { profile, isLoading, updateProfile } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(profile.name);
-  const [shopName, setShopName] = useState(profile.shopName);
+  const [name, setName] = useState("");
+  const [shopName, setShopName] = useState("");
   const [saved, setSaved] = useState(false);
 
-  function handleEdit() {
+  useEffect(() => {
+    if (!profile || isEditing) return;
     setName(profile.name);
     setShopName(profile.shopName);
+  }, [profile, isEditing]);
+
+  if (isLoading || !profile) {
+    return (
+      <div className="px-5 py-6 pb-24 md:max-w-2xl md:mx-auto md:px-10 md:py-10 md:pb-10">
+        <div className="rounded-market border border-surface-container-high bg-surface-container-lowest p-6 text-center text-on-surface-variant">
+          Loading profile...
+        </div>
+      </div>
+    );
+  }
+
+  const currentProfile = profile!;
+
+  function handleEdit() {
+    setName(currentProfile.name);
+    setShopName(currentProfile.shopName);
     setSaved(false);
     setIsEditing(true);
   }
 
   function handleSave() {
-    updateProfile({ name: name.trim() || profile.name, shopName: shopName.trim() || profile.shopName });
+    updateProfile({
+      name: name.trim() || currentProfile.name,
+      shopName: shopName.trim() || currentProfile.shopName,
+    });
     setIsEditing(false);
     setSaved(true);
   }
 
   function handleCancel() {
-    setName(profile.name);
-    setShopName(profile.shopName);
+    setName(currentProfile.name);
+    setShopName(currentProfile.shopName);
     setIsEditing(false);
   }
 
@@ -50,8 +71,8 @@ export default function ProfilePage() {
 
       <div className="flex flex-col items-center gap-3">
         <img
-          src={profile.avatar}
-          alt={profile.name}
+          src={currentProfile.avatar}
+          alt={currentProfile.name}
           className="w-24 h-24 rounded-full border-4 border-primary"
         />
         {isEditing && (
@@ -78,7 +99,7 @@ export default function ProfilePage() {
               className="w-full h-[48px] bg-surface-container rounded-market px-4 border border-outline-variant outline-none text-on-surface text-body-md focus:border-primary"
             />
           ) : (
-            <p className="text-body-lg font-bold">{profile.name}</p>
+            <p className="text-body-lg font-bold">{currentProfile.name}</p>
           )}
         </div>
 
@@ -94,13 +115,13 @@ export default function ProfilePage() {
               className="w-full h-[48px] bg-surface-container rounded-market px-4 border border-outline-variant outline-none text-on-surface text-body-md focus:border-primary"
             />
           ) : (
-            <p className="text-body-lg font-bold">{profile.shopName}</p>
+            <p className="text-body-lg font-bold">{currentProfile.shopName}</p>
           )}
         </div>
 
         <div className="space-y-2">
           <span className="text-label-lg text-on-surface-variant">Phone Number</span>
-          <p className="text-body-lg font-bold text-on-surface-variant">{profile.phone}</p>
+          <p className="text-body-lg font-bold text-on-surface-variant">{currentProfile.phone}</p>
         </div>
       </section>
 

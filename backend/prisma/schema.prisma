@@ -46,3 +46,14 @@ model PriceBenchmark {
   maxMarketPrice Int
   trend          String @default("stable") // "up" | "down" | "stable"
 }
+
+model Vendor {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  passwordHash String
+  name         String
+  shopName     String
+  avatar       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

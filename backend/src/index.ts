@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import authRouter from "./routes/auth";
 import messagesRouter from "./routes/messages";
 import debtsRouter from "./routes/debts";
 import pricesRouter from "./routes/prices";
@@ -12,6 +13,7 @@ const PORT = process.env.PORT ?? 4000;
 app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 
+app.use("/api/auth", authRouter);
 app.use("/api/messages", messagesRouter);
 app.use("/api/debts", debtsRouter);
 app.use("/api/prices", pricesRouter);

@@ -25,7 +25,14 @@ export type ParsedIntent =
     }
   | { kind: "unknown" };
 
+export interface HistoryMessage {
+  sender: "assistant" | "vendor";
+  text: string;
+}
+
 const GEMMA_SYSTEM_PROMPT = `You are an assistant that extracts structured sales/debt data from a market vendor's short message (often a transcribed voice note, sometimes in Nigerian Pidgin or mixed English).
+
+You will be given the recent conversation for context, followed by the vendor's newest message. Use the history only to resolve corrections or follow-ups — e.g. if the vendor just said "sold 2 bags of rice for 15k" and now says "actually make that 3 bags", apply the correction using the item/price already established in the history. Do not re-emit an intent for something already logged earlier unless the newest message is clearly changing it.
 
 Respond with ONLY a single JSON object — no markdown, no code fences, no explanation — matching exactly one of these shapes:
 
@@ -38,10 +45,7 @@ Rules:
 - Use "type":"customer" when the vendor sold something on credit and a customer now owes them.
 - Use "type":"supplier" when the vendor received goods on credit and now owes a supplier.
 - "buyerName"/"personName" should be a proper name if mentioned, otherwise omit the field (for buyerName) or use "Unknown" (for personName, since it's required).
-- If there's no clear item and amount, return {"kind":"unknown"}.
-
-Message:
-"""`;
+- If there's no clear item and amount — even after checking history — return {"kind":"unknown"}.`;
 
 function extractJsonObject(raw: string): unknown {
   const trimmed = raw.trim();
@@ -80,8 +84,26 @@ function isValidIntent(value: unknown): value is ParsedIntent {
   return false;
 }
 
-async function parseMessageWithGemma(text: string): Promise<ParsedIntent> {
-  const raw = await callGemma(`${GEMMA_SYSTEM_PROMPT}${text}"""`);
+function formatHistory(history: HistoryMessage[]): string {
+  if (history.length === 0) return "(no earlier messages)";
+  return history
+    .map((m) => `${m.sender === "vendor" ? "Vendor" : "Assistant"}: ${m.text}`)
+    .join("\n");
+}
+
+async function parseMessageWithGemma(
+  text: string,
+  history: HistoryMessage[]
+): Promise<ParsedIntent> {
+  const prompt = `${GEMMA_SYSTEM_PROMPT}
+
+Recent conversation:
+${formatHistory(history)}
+
+Vendor's newest message:
+"""${text}"""`;
+
+  const raw = await callGemma(prompt);
   const parsed = extractJsonObject(raw);
 
   if (!isValidIntent(parsed)) {
@@ -176,14 +198,20 @@ function parseMessageHeuristic(text: string): ParsedIntent {
   return { kind: "unknown" };
 }
 
-export async function parseMessage(text: string): Promise<ParsedIntent> {
+export async function parseMessage(
+  text: string,
+  history: HistoryMessage[] = []
+): Promise<ParsedIntent> {
   if (isGemmaConfigured()) {
     try {
-      return await parseMessageWithGemma(text);
+      return await parseMessageWithGemma(text, history);
     } catch (err) {
       console.error("Gemma parsing failed, falling back to heuristics:", err);
     }
   }
 
+  // The regex fallback stays single-message-only — reliably using
+  // conversation context needs actual language understanding, which the
+  // heuristic path doesn't have. It's a safety net, not the primary path.
   return parseMessageHeuristic(text);
 }

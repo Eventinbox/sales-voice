@@ -9,7 +9,6 @@ npm install
 cp .env.example .env
 npx prisma generate
 npx prisma migrate dev --name init
-npm run seed
 npm run dev
 ```
 
@@ -35,7 +34,6 @@ If `GEMMA_API_KEY` is unset, or the Gemma call fails/returns something unparseab
 
 Get a key at https://aistudio.google.com/apikey and set `GEMMA_API_KEY` (and optionally `GEMMA_MODEL`, default `gemma-4-26b-a4b-it`) in `.env`.
 
-
-- `DebtEntry.type` is `"customer" | "supplier"`, matching the frontend's existing field name exactly — this resolves the type/direction naming question from earlier.
+- `DebtEntry.type` is `"customer" | "supplier"`, matching the frontend's existing field name exactly.
 - Data is in SQLite (`prisma/dev.db`), not in-memory, so it survives server restarts.
 - `parseMessage.ts` calls Gemma first and falls back to its old regex stub on any failure — see `src/lib/gemma.ts` for the API client.

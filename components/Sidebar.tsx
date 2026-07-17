@@ -6,7 +6,13 @@ import { useProfile } from "@/lib/profile";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { profile } = useProfile();
+  const { profile, isLoading } = useProfile();
+
+  if (isLoading || !profile) {
+    return (
+      <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col md:border-r md:border-surface-container-high md:bg-surface-container-lowest md:z-50" />
+    );
+  }
 
   return (
     <aside className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col md:border-r md:border-surface-container-high md:bg-surface-container-lowest md:z-50">

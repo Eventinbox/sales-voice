@@ -17,7 +17,7 @@ const currencies: { code: Currency; label: string }[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const { logout } = useAuth();
-  const { profile } = useProfile();
+  const { profile, isLoading } = useProfile();
   const [currency, setCurrency] = useState<Currency>(mockSettings.currency);
   const [notificationsEnabled, setNotificationsEnabled] = useState(mockSettings.notificationsEnabled);
   const [voiceInputEnabled, setVoiceInputEnabled] = useState(mockSettings.voiceInputEnabled);
@@ -25,6 +25,16 @@ export default function SettingsPage() {
   function handleLogout() {
     logout();
     router.replace('/login');
+  }
+
+  if (isLoading || !profile) {
+    return (
+      <div className="px-5 py-6 space-y-8 pb-24 md:max-w-2xl md:mx-auto md:px-10 md:py-10 md:pb-10">
+        <div className="rounded-market border border-surface-container-high bg-surface-container-lowest p-6 text-center text-on-surface-variant">
+          Loading profile...
+        </div>
+      </div>
+    );
   }
 
   return (

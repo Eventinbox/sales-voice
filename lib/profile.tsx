@@ -1,39 +1,64 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { currentUser as defaultProfile } from "./mock-data";
+import { getToken } from "./token";
 import { ShopProfile } from "./types";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
 interface ProfileContextValue {
-  profile: ShopProfile;
-  updateProfile: (updates: Partial<ShopProfile>) => void;
+  profile: ShopProfile | null;
+  isLoading: boolean;
+  updateProfile: (updates: Partial<Pick<ShopProfile, "name" | "shopName">>) => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(undefined);
-const STORAGE_KEY = "sales-voice-profile";
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<ShopProfile>(defaultProfile);
+  const [profile, setProfile] = useState<ShopProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
-    try {
-      setProfile({ ...defaultProfile, ...JSON.parse(stored) });
-    } catch {
-      // Ignore malformed cache — fall back to the default mock profile.
+    const token = getToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
+
+    fetch(`${API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setProfile({
+            name: data.name,
+            shopName: data.shopName,
+            avatar: data.avatar ?? "",
+            phone: data.phone,
+          } as ShopProfile);
+        }
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  function updateProfile(updates: Partial<ShopProfile>) {
-    setProfile((prev) => {
-      const next = { ...prev, ...updates };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
+  async function updateProfile(updates: Partial<Pick<ShopProfile, "name" | "shopName">>) {
+    const token = getToken();
+    if (!token) return;
+
+    const res = await fetch(`${API_URL}/api/auth/me`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(updates),
     });
+
+    if (res.ok) {
+      const data = await res.json();
+      setProfile((prev) => (prev ? { ...prev, ...data } : prev));
+    }
   }
 
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile }}>
+    <ProfileContext.Provider value={{ profile, isLoading, updateProfile }}>
       {children}
     </ProfileContext.Provider>
   );

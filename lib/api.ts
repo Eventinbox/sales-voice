@@ -1,10 +1,10 @@
 import { Message, DebtEntry, PriceBenchmark } from "./types";
 import { formatTime, formatDateTime } from "./utils";
+import { getToken } from "./token";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-// --- Raw shapes returned by the backend (include id/createdAt that the
-// frontend types don't carry) ---
+// --- Raw shapes returned by the backend ---
 
 interface ApiMessage {
   id: string;
@@ -71,17 +71,29 @@ function toPriceBenchmark(raw: ApiPriceBenchmark): PriceBenchmark {
   };
 }
 
+// --- Auth-aware fetch wrapper ---
+
+function authHeaders(): HeadersInit {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Not authenticated — please log in again.");
+    }
     throw new Error(`API request failed: ${res.status} ${res.statusText}`);
   }
   return res.json();
 }
 
 // --- Public API ---
+// Messages, debts, and summary are all per-vendor and require a token.
+// Prices are shared market data and stay public.
 
 export async function fetchMessages(): Promise<Message[]> {
-  const res = await fetch(`${API_URL}/api/messages`);
+  const res = await fetch(`${API_URL}/api/messages`, { headers: authHeaders() });
   const raw = await handle<ApiMessage[]>(res);
   return raw.map(toMessage);
 }
@@ -91,7 +103,7 @@ export async function sendMessage(
 ): Promise<{ vendorMessage: Message; assistantMessage: Message }> {
   const res = await fetch(`${API_URL}/api/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ text }),
   });
   const raw = await handle<{ vendorMessage: ApiMessage; assistantMessage: ApiMessage }>(res);
@@ -103,13 +115,13 @@ export async function sendMessage(
 
 export async function fetchDebts(type?: "customer" | "supplier"): Promise<DebtEntry[]> {
   const url = type ? `${API_URL}/api/debts?type=${type}` : `${API_URL}/api/debts`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: authHeaders() });
   const raw = await handle<ApiDebtEntry[]>(res);
   return raw.map(toDebtEntry);
 }
 
 export async function fetchDebt(id: string): Promise<DebtEntry> {
-  const res = await fetch(`${API_URL}/api/debts/${id}`);
+  const res = await fetch(`${API_URL}/api/debts/${id}`, { headers: authHeaders() });
   const raw = await handle<ApiDebtEntry>(res);
   return toDebtEntry(raw);
 }
@@ -120,7 +132,7 @@ export async function updateDebtStatus(
 ): Promise<DebtEntry> {
   const res = await fetch(`${API_URL}/api/debts/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ status }),
   });
   const raw = await handle<ApiDebtEntry>(res);
@@ -128,12 +140,13 @@ export async function updateDebtStatus(
 }
 
 export async function fetchPrices(): Promise<PriceBenchmark[]> {
+  // Public — no auth header. Market prices are shared, not per-vendor.
   const res = await fetch(`${API_URL}/api/prices`);
   const raw = await handle<ApiPriceBenchmark[]>(res);
   return raw.map(toPriceBenchmark);
 }
 
 export async function fetchSummary(): Promise<{ todaysSales: number }> {
-  const res = await fetch(`${API_URL}/api/summary`);
+  const res = await fetch(`${API_URL}/api/summary`, { headers: authHeaders() });
   return handle<{ todaysSales: number }>(res);
 }

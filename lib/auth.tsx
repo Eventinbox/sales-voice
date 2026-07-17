@@ -1,44 +1,104 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { getToken, setToken, clearToken } from "./token";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (phone: string, password: string) => boolean;
+  error: string | null;
+  login: (phone: string, password: string) => Promise<boolean>;
+  register: (phone: string, password: string, name: string, shopName: string) => Promise<boolean>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const STORAGE_KEY = "sales-voice-auth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // On load, if there's a stored token, confirm it's still valid against
+  // the backend rather than just trusting that it exists.
   useEffect(() => {
-    setIsAuthenticated(localStorage.getItem(STORAGE_KEY) === "true");
-    setIsLoading(false);
+    const token = getToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    fetch(`${API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Session expired");
+        setIsAuthenticated(true);
+      })
+      .catch(() => {
+        clearToken();
+        setIsAuthenticated(false);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  function login(phone: string, password: string) {
-    // Mock authentication only — there is no backend yet, so any well-formed
-    // phone number + password combo succeeds. Swap this out for a real API
-    // call once auth is backed by a server.
-    if (phone.trim().length < 7 || password.trim().length < 4) {
+  async function login(phone: string, password: string): Promise<boolean> {
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Login failed");
+        return false;
+      }
+      setToken(data.token);
+      setIsAuthenticated(true);
+      return true;
+    } catch {
+      setError("Couldn't reach the server. Is the backend running?");
       return false;
     }
-    localStorage.setItem(STORAGE_KEY, "true");
-    setIsAuthenticated(true);
-    return true;
+  }
+
+  async function register(
+    phone: string,
+    password: string,
+    name: string,
+    shopName: string
+  ): Promise<boolean> {
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password, name, shopName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Registration failed");
+        return false;
+      }
+      setToken(data.token);
+      setIsAuthenticated(true);
+      return true;
+    } catch {
+      setError("Couldn't reach the server. Is the backend running?");
+      return false;
+    }
   }
 
   function logout() {
-    localStorage.removeItem(STORAGE_KEY);
+    clearToken();
     setIsAuthenticated(false);
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, error, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
