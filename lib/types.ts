@@ -1,9 +1,3 @@
-export type User = {
-  id: string;
-  name: string;
-  avatar: string;
-};
-
 export type MessageType = 'text' | 'confirmation';
 
 export interface Message {

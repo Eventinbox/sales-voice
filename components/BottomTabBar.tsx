@@ -20,9 +20,10 @@ export default function BottomTabBar() {
           <Link
             key={tab.name}
             href={tab.href}
+            aria-current={isActive ? 'page' : undefined}
             className={`flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-full transition-colors ${isActive ? 'bg-primary text-on-primary' : 'text-on-surface-variant'}`}
           >
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
               <path d={tab.icon} />
             </svg>
             <span className="text-[10px] font-bold uppercase tracking-tighter">{tab.name}</span>

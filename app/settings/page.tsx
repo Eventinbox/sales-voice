@@ -1,8 +1,11 @@
 "use client";
-import { useState } from "react";
-import { currentUser, mockSettings } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { currentUser } from "@/lib/mock-data";
 import { Currency } from "@/lib/types";
 import Toggle from "@/components/Toggle";
+
+const STORAGE_KEY = "sales-voice-settings";
 
 const currencies: { code: Currency; label: string }[] = [
   { code: 'NGN', label: '₦ Naira' },
@@ -10,10 +13,32 @@ const currencies: { code: Currency; label: string }[] = [
   { code: 'GHS', label: '₵ Cedi' },
 ];
 
+function loadSettings() {
+  if (typeof window === "undefined") {
+    return { currency: 'NGN' as Currency, notificationsEnabled: true, voiceInputEnabled: true };
+  }
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try { return JSON.parse(stored); } catch
+  }
+  return { currency: 'NGN' as Currency, notificationsEnabled: true, voiceInputEnabled: true };
+}
+
 export default function SettingsPage() {
-  const [currency, setCurrency] = useState<Currency>(mockSettings.currency);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(mockSettings.notificationsEnabled);
-  const [voiceInputEnabled, setVoiceInputEnabled] = useState(mockSettings.voiceInputEnabled);
+  const [currency, setCurrency] = useState<Currency>('NGN');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [voiceInputEnabled, setVoiceInputEnabled] = useState(true);
+
+  useEffect(() => {
+    const saved = loadSettings();
+    setCurrency(saved.currency);
+    setNotificationsEnabled(saved.notificationsEnabled);
+    setVoiceInputEnabled(saved.voiceInputEnabled);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ currency, notificationsEnabled, voiceInputEnabled }));
+  }, [currency, notificationsEnabled, voiceInputEnabled]);
 
   return (
     <div className="px-5 py-6 space-y-8 pb-24">
@@ -23,10 +48,12 @@ export default function SettingsPage() {
 
       {/* Profile */}
       <section className="bg-surface-container-lowest border border-surface-container-high rounded-market p-4 flex items-center gap-4">
-        <img
+        <Image
           src={currentUser.avatar}
           alt={currentUser.name}
-          className="w-16 h-16 rounded-full border-2 border-primary"
+          width={64}
+          height={64}
+          className="rounded-full border-2 border-primary"
         />
         <div>
           <p className="text-body-lg font-bold">{currentUser.name}</p>

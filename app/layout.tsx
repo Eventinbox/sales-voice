@@ -1,6 +1,12 @@
 import { Public_Sans } from 'next/font/google';
 import './globals.css';
 import BottomTabBar from '@/components/BottomTabBar';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Sales Voice — Mama Tolu Provisions',
+  description: 'Track daily sales, debts, and market prices for your shop.',
+};
 
 const publicSans = Public_Sans({
   subsets: ['latin'],

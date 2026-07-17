@@ -4,29 +4,8 @@ import BigNumberCard from "@/components/BigNumberCard";
 import ListRow from "@/components/ListRow";
 import PriceRangeBar from "@/components/PriceRangeBar";
 import StatusPill from "@/components/StatusPill";
+import TrendIcon from "@/components/TrendIcon";
 import { mockDebts, mockPrices } from "@/lib/mock-data";
-
-function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
-  if (trend === 'up') {
-    return (
-      <svg width="16" height="16" fill="currentColor" className="text-primary" viewBox="0 0 24 24">
-        <path d="M7 14l5-5 5 5H7z" />
-      </svg>
-    );
-  }
-  if (trend === 'down') {
-    return (
-      <svg width="16" height="16" fill="currentColor" className="text-error" viewBox="0 0 24 24">
-        <path d="M7 10l5 5 5-5H7z" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="16" height="16" fill="currentColor" className="text-on-surface-variant" viewBox="0 0 24 24">
-      <rect x="6" y="11" width="12" height="2" />
-    </svg>
-  );
-}
 
 export default function DashboardPage() {
   const customerDebts = mockDebts.filter(d => d.type === 'customer');
@@ -37,7 +16,7 @@ export default function DashboardPage() {
     <div className="px-5 py-6 space-y-8">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button className="p-2"><svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+          <button aria-label="Open menu" className="p-2"><svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
           <h1 className="text-headline-lg font-bold">My Shop Summary</h1>
         </div>
         <div className="w-10 h-10 rounded-full bg-surface-container border border-outline-variant" />
@@ -111,8 +90,8 @@ export default function DashboardPage() {
       </section>
 
       <div className="fixed inset-x-0 bottom-24 max-w-md mx-auto pointer-events-none z-40">
-        <button className="pointer-events-auto absolute right-5 w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center shadow-[2px_2px_0_0_#dcd9d9]">
-          <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        <button aria-label="Voice input" className="pointer-events-auto absolute right-5 w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center shadow-[2px_2px_0_0_#dcd9d9]">
+          <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
         </button>
       </div>
     </div>

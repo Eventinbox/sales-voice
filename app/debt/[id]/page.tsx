@@ -4,18 +4,19 @@ import Button from "@/components/Button";
 import ListRow from "@/components/ListRow";
 import PriceRangeBar from "@/components/PriceRangeBar";
 import StatusPill from "@/components/StatusPill";
-import { useRouter } from "next/navigation";
+import { useRouter, notFound } from "next/navigation";
 
 export default function DebtDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const debt = mockDebts.find(d => d.id === params.id) || mockDebts[0];
+  const debt = mockDebts.find(d => d.id === params.id);
+  if (!debt) notFound();
   const isPaid = debt.status === 'PAID';
 
   return (
     <div className="px-5 py-6 space-y-8">
       <header className="flex items-center gap-4">
-        <button onClick={() => router.back()} className="p-2">
-          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" /></svg>
+        <button aria-label="Go back" onClick={() => router.back()} className="p-2">
+          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
         <div className="flex items-center gap-3">
           <h1 className="text-headline-lg font-bold">{debt.personName}'s Debt</h1>
@@ -63,8 +64,8 @@ export default function DebtDetailPage({ params }: { params: { id: string } }) {
                 {debt.status}
               </span>
             </div>
-            <button className="p-2 text-outline-variant">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <button aria-label="More info" className="p-2 text-outline-variant">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </button>
           </div>
         </div>

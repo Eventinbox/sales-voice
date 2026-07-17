@@ -5,7 +5,8 @@ interface PriceRangeBarProps {
 }
 
 export default function PriceRangeBar({ current, min, max }: PriceRangeBarProps) {
-  const percentage = ((current - min) / (max - min)) * 100;
+  const raw = max === min ? 50 : ((current - min) / (max - min)) * 100;
+  const percentage = Math.min(100, Math.max(0, raw));
 
   return (
     <div className="w-full py-4">

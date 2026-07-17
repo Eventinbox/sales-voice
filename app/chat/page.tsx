@@ -1,17 +1,17 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { mockMessages, currentUser } from "@/lib/mock-data";
 import { Message } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
 import ChatBubble from "@/components/ChatBubble";
 import ActionBar from "@/components/ActionBar";
 
-let localIdCounter = 0;
-
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [inputValue, setInputValue] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const idCounter = useRef(0);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,7 +22,7 @@ export default function ChatPage() {
     if (!trimmed) return;
 
     const vendorMessage: Message = {
-      id: `local-${++localIdCounter}`,
+      id: `local-${++idCounter.current}`,
       sender: 'vendor',
       text: trimmed,
       timestamp: formatTime(),
@@ -31,11 +31,9 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, vendorMessage]);
     setInputValue("");
 
-    // Simulated acknowledgment only — real sale/debt parsing happens
-    // server-side via the Gemma function-calling layer, not here.
     setTimeout(() => {
       const assistantReply: Message = {
-        id: `local-${++localIdCounter}`,
+        id: `local-${++idCounter.current}`,
         sender: 'assistant',
         text: "Got it! I've noted that down for you.",
         timestamp: formatTime(),
@@ -45,6 +43,12 @@ export default function ChatPage() {
     }, 700);
   }
 
+  const todayDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="flex flex-col h-screen">
       <header className="px-5 py-6 flex items-center justify-between">
@@ -52,12 +56,18 @@ export default function ChatPage() {
           <div className="w-10 h-10 bg-primary rounded-market flex items-center justify-center text-white font-bold">SV</div>
           <h1 className="text-headline-lg text-primary font-bold">Sales Voice</h1>
         </div>
-        <img src={currentUser.avatar} className="w-10 h-10 rounded-full border-2 border-primary" alt="avatar" />
+        <Image
+          src={currentUser.avatar}
+          alt={currentUser.name}
+          width={40}
+          height={40}
+          className="rounded-full border-2 border-primary"
+        />
       </header>
 
       <div className="flex justify-center mb-6">
         <span className="px-4 py-1 bg-surface-container-high rounded-full text-xs font-bold text-on-surface-variant">
-          Today, July 11
+          {todayDate}
         </span>
       </div>
 
