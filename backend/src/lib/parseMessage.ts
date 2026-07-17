@@ -91,18 +91,47 @@ async function parseMessageWithGemma(text: string): Promise<ParsedIntent> {
   return parsed;
 }
 
-function extractAmount(text: string): number | null {
-  // Matches "15k", "15,000", "4000", "₦4,000" etc.
-  const match = text.match(/₦?\s?([\d,]+)\s?(k)?/i);
-  if (!match) return null;
-
-  let value = parseInt(match[1].replace(/,/g, ""), 10);
+function parseAmountMatch(digits: string, kSuffix?: string): number | null {
+  let value = parseInt(digits.replace(/,/g, ""), 10);
   if (isNaN(value)) return null;
 
-  if (match[2]?.toLowerCase() === "k") {
+  if (kSuffix?.toLowerCase() === "k") {
     value *= 1000;
   }
   return value;
+}
+
+function extractAmount(text: string): number | null {
+  // A message often has more than one number ("sold 3 bags ... for 12000") —
+  // the first number in the sentence is usually a quantity, not the price.
+  // So we prefer numbers explicitly tied to the price before falling back
+  // to "biggest number wins", since prices are almost always larger than
+  // item quantities.
+
+  // 1. Number right after "for" — the most common price phrasing.
+  const forMatch = text.match(/for\s+₦?\s?([\d,]+)\s?(k)?/i);
+  if (forMatch) {
+    const value = parseAmountMatch(forMatch[1], forMatch[2]);
+    if (value !== null) return value;
+  }
+
+  // 2. Number explicitly marked with the Naira symbol.
+  const nairaMatch = text.match(/₦\s?([\d,]+)\s?(k)?/i);
+  if (nairaMatch) {
+    const value = parseAmountMatch(nairaMatch[1], nairaMatch[2]);
+    if (value !== null) return value;
+  }
+
+  // 3. Fallback: the largest number mentioned anywhere in the message.
+  const allMatches = [...text.matchAll(/([\d,]+)\s?(k)?\b/gi)];
+  let best: number | null = null;
+  for (const m of allMatches) {
+    const value = parseAmountMatch(m[1], m[2]);
+    if (value !== null && (best === null || value > best)) {
+      best = value;
+    }
+  }
+  return best;
 }
 
 function extractItem(text: string): string {
