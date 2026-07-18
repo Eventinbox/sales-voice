@@ -5,6 +5,7 @@ const parseMessage_1 = require("../lib/parseMessage");
 const requireAuth_1 = require("../middleware/requireAuth");
 const MessageRepository_1 = require("../repositories/MessageRepository");
 const SaleRepository_1 = require("../repositories/SaleRepository");
+const PriceRepository_1 = require("../repositories/PriceRepository");
 const DebtRepository_1 = require("../repositories/DebtRepository");
 const router = (0, express_1.Router)();
 // GET /api/messages — full chat history, oldest first
@@ -43,8 +44,20 @@ router.post("/", requireAuth_1.requireAuth, async (req, res) => {
             amount: intent.amount,
             buyerName: intent.buyerName,
         });
+        const updatedPriceBenchmark = await PriceRepository_1.priceRepository.upsertFromSale({
+            item: intent.item,
+            amount: intent.amount,
+        });
         assistantText = `Logged that! ${intent.item} for ₦${intent.amount.toLocaleString()}.`;
         confirmationAmount = intent.amount.toLocaleString();
+        const assistantMessage = await MessageRepository_1.messageRepository.create({
+            vendorId: req.vendorId,
+            sender: "assistant",
+            text: assistantText,
+            type: confirmationAmount ? "confirmation" : "text",
+            confirmationAmount,
+        });
+        return res.status(201).json({ vendorMessage, assistantMessage, intent, updatedPriceBenchmark });
     }
     else if (intent.kind === "debt") {
         await DebtRepository_1.debtRepository.create({

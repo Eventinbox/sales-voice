@@ -32,8 +32,11 @@ export default function ChatPage() {
     setInputValue("");
     setSending(true);
     try {
-      const { vendorMessage, assistantMessage } = await sendMessage(trimmed);
+      const { vendorMessage, assistantMessage, updatedPriceBenchmark } = await sendMessage(trimmed);
       setMessages((prev) => [...prev, vendorMessage, assistantMessage]);
+      if (updatedPriceBenchmark) {
+        window.dispatchEvent(new Event("sales-voice:prices-updated"));
+      }
     } catch {
       setError("Message didn't send — check the backend is running.");
       setInputValue(trimmed); // give the text back so nothing's lost

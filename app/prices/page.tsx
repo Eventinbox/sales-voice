@@ -33,10 +33,35 @@ export default function PricesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchPrices()
-      .then(setPrices)
-      .catch(() => setError("Couldn't reach the backend. Is it running on localhost:4000?"))
-      .finally(() => setLoading(false));
+    let active = true;
+
+    async function loadPrices() {
+      try {
+        const data = await fetchPrices();
+        if (!active) return;
+        setPrices(data);
+        setError(null);
+      } catch {
+        if (active) {
+          setError("Couldn't reach the backend. Is it running on localhost:4000?");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadPrices();
+
+    const handlePricesUpdated = () => {
+      loadPrices();
+    };
+
+    window.addEventListener("sales-voice:prices-updated", handlePricesUpdated);
+
+    return () => {
+      active = false;
+      window.removeEventListener("sales-voice:prices-updated", handlePricesUpdated);
+    };
   }, []);
 
   return (
@@ -46,7 +71,7 @@ export default function PricesPage() {
       </header>
 
       <p className="text-body-md text-on-surface-variant">
-        Track how your prices compare to the market average for everything you sell.
+        See the price you sold at and compare it with the market.
       </p>
 
       {loading && <p className="text-on-surface-variant text-body-md">Loading...</p>}
@@ -64,7 +89,7 @@ export default function PricesPage() {
                 <TrendIcon trend={price.trend} />
               </div>
               <StatusPill
-                label={`Your Price: ₦${price.currentPrice.toLocaleString()}`}
+                label={`Sold Price: ₦${price.currentPrice.toLocaleString()}`}
                 variant="solid"
                 color="primary"
               />

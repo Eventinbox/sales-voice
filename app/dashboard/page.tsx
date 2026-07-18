@@ -38,14 +38,41 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchDebts(), fetchPrices(), fetchSummary()])
-      .then(([debtsData, pricesData, summary]) => {
+    let active = true;
+
+    async function loadDashboard() {
+      try {
+        const [debtsData, pricesData, summary] = await Promise.all([
+          fetchDebts(),
+          fetchPrices(),
+          fetchSummary(),
+        ]);
+        if (!active) return;
         setDebts(debtsData);
         setPrices(pricesData);
         setTodaysSales(summary.todaysSales);
-      })
-      .catch(() => setError("Couldn't reach the backend. Is it running on localhost:4000?"))
-      .finally(() => setLoading(false));
+        setError(null);
+      } catch {
+        if (active) {
+          setError("Couldn't reach the backend. Is it running on localhost:4000?");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadDashboard();
+
+    const handlePricesUpdated = () => {
+      loadDashboard();
+    };
+
+    window.addEventListener("sales-voice:prices-updated", handlePricesUpdated);
+
+    return () => {
+      active = false;
+      window.removeEventListener("sales-voice:prices-updated", handlePricesUpdated);
+    };
   }, []);
 
   const customerDebts = debts.filter(d => d.type === 'customer');
@@ -56,7 +83,11 @@ export default function DashboardPage() {
     <div className="px-5 py-6 space-y-8">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button className="p-2"><svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+          <button aria-label="Open menu" className="p-2">
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <h1 className="text-headline-lg font-bold">My Shop Summary</h1>
         </div>
         <div className="w-10 h-10 rounded-full bg-surface-container border border-outline-variant" />
@@ -68,14 +99,14 @@ export default function DashboardPage() {
       {!loading && !error && (
         <>
           <BigNumberCard
-            label="Today's Sales"
+            label="Money In Today"
             value={`₦${(todaysSales ?? 0).toLocaleString()}`}
             colorClass="bg-primary"
             onPrimaryContainerClass="text-on-primary-container"
           />
 
           <section className="space-y-4">
-            <h2 className="text-label-lg uppercase text-on-surface-variant">Credit & Debt</h2>
+            <h2 className="text-label-lg uppercase text-on-surface-variant">Money Owed</h2>
 
             <div className="bg-surface-container-lowest border border-surface-container-high rounded-market p-4 space-y-4">
               <div className="flex items-center gap-2 text-secondary font-bold text-label-lg">
@@ -131,7 +162,7 @@ export default function DashboardPage() {
                     <TrendIcon trend={price.trend} />
                   </div>
                   <StatusPill
-                    label={`Your Price: ₦${price.currentPrice.toLocaleString()}`}
+                    label={`Sold Price: ₦${price.currentPrice.toLocaleString()}`}
                     variant="solid"
                     color="primary"
                   />

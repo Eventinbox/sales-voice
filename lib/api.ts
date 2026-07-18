@@ -100,16 +100,21 @@ export async function fetchMessages(): Promise<Message[]> {
 
 export async function sendMessage(
   text: string
-): Promise<{ vendorMessage: Message; assistantMessage: Message }> {
+): Promise<{ vendorMessage: Message; assistantMessage: Message; updatedPriceBenchmark?: PriceBenchmark }> {
   const res = await fetch(`${API_URL}/api/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ text }),
   });
-  const raw = await handle<{ vendorMessage: ApiMessage; assistantMessage: ApiMessage }>(res);
+  const raw = await handle<{
+    vendorMessage: ApiMessage;
+    assistantMessage: ApiMessage;
+    updatedPriceBenchmark?: ApiPriceBenchmark;
+  }>(res);
   return {
     vendorMessage: toMessage(raw.vendorMessage),
     assistantMessage: toMessage(raw.assistantMessage),
+    updatedPriceBenchmark: raw.updatedPriceBenchmark ? toPriceBenchmark(raw.updatedPriceBenchmark) : undefined,
   };
 }
 
