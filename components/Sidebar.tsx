@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navTabs } from "@/lib/nav";
 import { useProfile } from "@/lib/profile";
+import AvatarBadge from "@/components/AvatarBadge";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -47,10 +48,10 @@ export default function Sidebar() {
         href="/profile"
         className="flex items-center gap-3 px-6 py-5 border-t border-surface-container-high hover:bg-surface-container transition-colors"
       >
-        <img
-          src={profile.avatar}
-          alt={profile.name}
-          className="w-9 h-9 rounded-full border-2 border-primary shrink-0"
+        <AvatarBadge
+          name={profile.name}
+          avatar={profile.avatar}
+          className="w-9 h-9 rounded-full border-2 border-primary bg-surface-container"
         />
         <div className="min-w-0">
           <p className="text-body-md font-bold truncate">{profile.name}</p>

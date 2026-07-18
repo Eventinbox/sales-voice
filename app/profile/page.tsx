@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/lib/profile";
 import Button from "@/components/Button";
+import AvatarBadge from "@/components/AvatarBadge";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -70,10 +71,10 @@ export default function ProfilePage() {
       </header>
 
       <div className="flex flex-col items-center gap-3">
-        <img
-          src={currentProfile.avatar}
-          alt={currentProfile.name}
-          className="w-24 h-24 rounded-full border-4 border-primary"
+        <AvatarBadge
+          name={currentProfile.name}
+          avatar={currentProfile.avatar}
+          className="w-24 h-24 rounded-full border-4 border-primary bg-surface-container"
         />
         {isEditing && (
           <button

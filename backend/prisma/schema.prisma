@@ -9,19 +9,23 @@ datasource db {
 
 model Message {
   id                 String   @id @default(cuid())
+  vendorId           String?
   sender             String // "assistant" | "vendor"
   text               String
   type               String   @default("text") // "text" | "confirmation"
   confirmationAmount String?
   createdAt          DateTime @default(now())
+  vendor             Vendor?  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
 
 model Sale {
   id        String   @id @default(cuid())
+  vendorId  String?
   item      String
   amount    Int
   buyerName String?
   createdAt DateTime @default(now())
+  vendor    Vendor?  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
 
 // NOTE: `type` here matches the frontend's DebtEntry.type field exactly
@@ -29,6 +33,7 @@ model Sale {
 // earlier; keeping both sides in sync avoids a mapping layer.
 model DebtEntry {
   id         String   @id @default(cuid())
+  vendorId   String?
   personName String
   item       String
   amount     Int
@@ -36,6 +41,7 @@ model DebtEntry {
   status     String   @default("UNPAID") // "PAID" | "UNPAID"
   note       String?
   createdAt  DateTime @default(now())
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
 
 model PriceBenchmark {
@@ -56,4 +62,7 @@ model Vendor {
   avatar       String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  messages     Message[]
+  sales        Sale[]
+  debtEntries  DebtEntry[]
 }

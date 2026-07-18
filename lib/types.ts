@@ -29,16 +29,11 @@ export interface PriceBenchmark {
 }
 
 export interface ShopProfile {
+  id: string;
   name: string;
   shopName: string;
-  avatar: string;
+  avatar?: string | null;
   phone: string;
 }
 
 export type Currency = 'NGN' | 'USD' | 'GHS';
-
-export interface AppSettings {
-  currency: Currency;
-  notificationsEnabled: boolean;
-  voiceInputEnabled: boolean;
-}

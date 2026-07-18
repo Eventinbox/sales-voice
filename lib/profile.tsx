@@ -31,9 +31,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (data) {
           setProfile({
+            id: data.id,
             name: data.name,
             shopName: data.shopName,
-            avatar: data.avatar ?? "",
+            avatar: data.avatar ?? null,
             phone: data.phone,
           } as ShopProfile);
         }

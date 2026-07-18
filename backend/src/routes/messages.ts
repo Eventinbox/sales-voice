@@ -1,19 +1,22 @@
 import { Router } from "express";
-import { prisma } from "../lib/prisma";
 import { parseMessage } from "../lib/parseMessage";
+import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
+import { messageRepository } from "../repositories/MessageRepository";
+import { saleRepository } from "../repositories/SaleRepository";
+import { debtRepository } from "../repositories/DebtRepository";
 
 const router = Router();
 
 // GET /api/messages — full chat history, oldest first
-router.get("/", async (_req, res) => {
-  const messages = await prisma.message.findMany({ orderBy: { createdAt: "asc" } });
+router.get("/", requireAuth, async (req: AuthedRequest, res) => {
+  const messages = await messageRepository.findAll(req.vendorId!);
   res.json(messages);
 });
 
 // POST /api/messages — vendor sends a message; we parse it, persist any
 // resulting sale/debt, and return both the vendor message and the
 // assistant's reply so the frontend can append them in one round trip.
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req: AuthedRequest, res) => {
   const { text } = req.body as { text?: string };
 
   if (!text || !text.trim()) {
@@ -22,17 +25,17 @@ router.post("/", async (req, res) => {
 
   // Pull recent context BEFORE inserting the new message, so it isn't
   // counted twice, then put it back in chronological order (oldest first).
-  const recent = await prisma.message.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  const recent = await messageRepository.findAll(req.vendorId!);
   const history = recent
     .slice()
     .reverse()
     .map((m) => ({ sender: m.sender as "assistant" | "vendor", text: m.text }));
 
-  const vendorMessage = await prisma.message.create({
-    data: { sender: "vendor", text: text.trim(), type: "text" },
+  const vendorMessage = await messageRepository.create({
+    vendorId: req.vendorId!,
+    sender: "vendor",
+    text: text.trim(),
+    type: "text",
   });
 
   const intent = await parseMessage(text, history);
@@ -40,32 +43,33 @@ router.post("/", async (req, res) => {
   let confirmationAmount: string | undefined;
 
   if (intent.kind === "sale") {
-    await prisma.sale.create({
-      data: { item: intent.item, amount: intent.amount, buyerName: intent.buyerName },
+    await saleRepository.create({
+      vendorId: req.vendorId!,
+      item: intent.item,
+      amount: intent.amount,
+      buyerName: intent.buyerName,
     });
     assistantText = `Logged that! ${intent.item} for ₦${intent.amount.toLocaleString()}.`;
     confirmationAmount = intent.amount.toLocaleString();
   } else if (intent.kind === "debt") {
-    await prisma.debtEntry.create({
-      data: {
-        personName: intent.personName,
-        item: intent.item,
-        amount: intent.amount,
-        type: intent.type,
-        note: intent.note,
-      },
+    await debtRepository.create({
+      vendorId: req.vendorId!,
+      personName: intent.personName,
+      item: intent.item,
+      amount: intent.amount,
+      type: intent.type,
+      note: intent.note,
     });
     assistantText = `Recorded. ₦${intent.amount.toLocaleString()} added to ${intent.personName}'s debt.`;
     confirmationAmount = intent.amount.toLocaleString();
   }
 
-  const assistantMessage = await prisma.message.create({
-    data: {
-      sender: "assistant",
-      text: assistantText,
-      type: confirmationAmount ? "confirmation" : "text",
-      confirmationAmount,
-    },
+  const assistantMessage = await messageRepository.create({
+    vendorId: req.vendorId!,
+    sender: "assistant",
+    text: assistantText,
+    type: confirmationAmount ? "confirmation" : "text",
+    confirmationAmount,
   });
 
   res.status(201).json({ vendorMessage, assistantMessage, intent });
