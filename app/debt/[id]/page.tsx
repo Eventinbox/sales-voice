@@ -17,13 +17,36 @@ export default function DebtDetailPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([fetchDebt(params.id), fetchPrices()])
-      .then(([debtData, priceData]) => {
+    let active = true;
+
+    async function loadDebt() {
+      try {
+        const [debtData, priceData] = await Promise.all([fetchDebt(params.id), fetchPrices()]);
+        if (!active) return;
         setDebt(debtData);
         setPrices(priceData);
-      })
-      .catch(() => setError("Couldn't load this debt. Is the backend running on localhost:4000?"))
-      .finally(() => setLoading(false));
+        setError(null);
+      } catch {
+        if (active) {
+          setError("Couldn't load this debt. Is the backend running on localhost:4000?");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadDebt();
+
+    const handlePricesUpdated = () => {
+      loadDebt();
+    };
+
+    window.addEventListener("sales-voice:prices-updated", handlePricesUpdated);
+
+    return () => {
+      active = false;
+      window.removeEventListener("sales-voice:prices-updated", handlePricesUpdated);
+    };
   }, [params.id]);
 
   async function handleMarkPaid() {

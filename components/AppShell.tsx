@@ -11,7 +11,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname ?? "");
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !isPublicRoute) {
