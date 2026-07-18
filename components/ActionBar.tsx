@@ -23,9 +23,9 @@ export default function ActionBar({ value, onChange, onSend, onRecordSale, onNew
             placeholder="Type or tap the mic..."
             className="flex-1 bg-transparent outline-none text-on-surface-variant text-body-md placeholder:text-on-surface-variant"
           />
-          <div className="ml-auto p-2 text-on-surface-variant">
-            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15.172 7l-6.172-6.172a.5.5 0 00-.708 0l-6.172 6.172a.5.5 0 000 .708l6.172 6.172" /></svg>
-          </div>
+          <button aria-label="Attach file" type="button" className="ml-auto p-2 text-on-surface-variant">
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.172 7l-6.172-6.172a.5.5 0 00-.708 0l-6.172 6.172a.5.5 0 000 .708l6.172 6.172" /></svg>
+          </button>
         </div>
         <button
           type="button"

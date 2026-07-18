@@ -1,30 +1,82 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { mockSettings } from "@/lib/mock-data";
+import { useRouter } from "next/navigation";
 import { Currency } from "@/lib/types";
 import Toggle from "@/components/Toggle";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
+import AvatarBadge from "@/components/AvatarBadge";
+
+const STORAGE_PREFIX = "sales-voice-settings";
 
 const currencies: { code: Currency; label: string }[] = [
-  { code: 'NGN', label: '₦ Naira' },
-  { code: 'USD', label: '$ Dollar' },
-  { code: 'GHS', label: '₵ Cedi' },
+  { code: "NGN", label: "₦ Naira" },
+  { code: "USD", label: "$ Dollar" },
+  { code: "GHS", label: "₵ Cedi" },
 ];
+
+function loadSettings(storageKey: string) {
+  if (typeof window === "undefined") {
+    return {
+      currency: "NGN" as Currency,
+      notificationsEnabled: true,
+      voiceInputEnabled: true,
+    };
+  }
+
+  const stored = localStorage.getItem(storageKey);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored) as {
+        currency?: Currency;
+        notificationsEnabled?: boolean;
+        voiceInputEnabled?: boolean;
+      };
+
+      return {
+        currency: parsed.currency ?? "NGN",
+        notificationsEnabled: parsed.notificationsEnabled ?? true,
+        voiceInputEnabled: parsed.voiceInputEnabled ?? true,
+      };
+    } catch {
+      // Fall through to defaults if localStorage was corrupted.
+    }
+  }
+
+  return {
+    currency: "NGN" as Currency,
+    notificationsEnabled: true,
+    voiceInputEnabled: true,
+  };
+}
 
 export default function SettingsPage() {
   const router = useRouter();
   const { logout } = useAuth();
   const { profile, isLoading } = useProfile();
-  const [currency, setCurrency] = useState<Currency>(mockSettings.currency);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(mockSettings.notificationsEnabled);
-  const [voiceInputEnabled, setVoiceInputEnabled] = useState(mockSettings.voiceInputEnabled);
+  const [currency, setCurrency] = useState<Currency>("NGN");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [voiceInputEnabled, setVoiceInputEnabled] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+  const storageKey = profile ? `${STORAGE_PREFIX}:${profile.id}` : STORAGE_PREFIX;
+
+  useEffect(() => {
+    const saved = loadSettings(storageKey);
+    setCurrency(saved.currency);
+    setNotificationsEnabled(saved.notificationsEnabled);
+    setVoiceInputEnabled(saved.voiceInputEnabled);
+    setHydrated(true);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(storageKey, JSON.stringify({ currency, notificationsEnabled, voiceInputEnabled }));
+  }, [currency, notificationsEnabled, voiceInputEnabled, hydrated, storageKey]);
 
   function handleLogout() {
     logout();
-    router.replace('/login');
+    router.replace("/login");
   }
 
   if (isLoading || !profile) {
@@ -43,47 +95,54 @@ export default function SettingsPage() {
         <h1 className="text-headline-lg font-bold">Settings</h1>
       </header>
 
-      {/* Profile */}
       <Link
         href="/profile"
         className="bg-surface-container-lowest border border-surface-container-high rounded-market p-4 flex items-center gap-4 hover:bg-surface-container transition-colors"
       >
-        <img
-          src={profile.avatar}
-          alt={profile.name}
-          className="w-16 h-16 rounded-full border-2 border-primary"
+        <AvatarBadge
+          name={profile.name}
+          avatar={profile.avatar}
+          className="w-16 h-16 rounded-full border-2 border-primary bg-surface-container"
         />
         <div className="flex-1">
           <p className="text-body-lg font-bold">{profile.name}</p>
           <p className="text-body-md text-on-surface-variant">{profile.shopName}</p>
         </div>
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-on-surface-variant shrink-0"><path d="M9 5l7 7-7 7" /></svg>
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          className="text-on-surface-variant shrink-0"
+        >
+          <path d="M9 5l7 7-7 7" />
+        </svg>
       </Link>
 
-      {/* Currency */}
       <section className="space-y-3">
         <h2 className="text-label-lg uppercase text-on-surface-variant">Currency</h2>
         <div className="flex gap-2">
-          {currencies.map((c) => {
-            const isActive = currency === c.code;
+          {currencies.map((option) => {
+            const isActive = currency === option.code;
             return (
               <button
-                key={c.code}
-                onClick={() => setCurrency(c.code)}
+                key={option.code}
+                onClick={() => setCurrency(option.code)}
                 className={`flex-1 h-[48px] rounded-market text-label-lg font-bold border-2 transition-colors ${
                   isActive
-                    ? 'bg-primary text-on-primary border-primary'
-                    : 'bg-transparent text-on-surface-variant border-outline-variant'
+                    ? "bg-primary text-on-primary border-primary"
+                    : "bg-transparent text-on-surface-variant border-outline-variant"
                 }`}
               >
-                {c.label}
+                {option.label}
               </button>
             );
           })}
         </div>
       </section>
 
-      {/* Preferences */}
       <section className="space-y-3">
         <h2 className="text-label-lg uppercase text-on-surface-variant">Preferences</h2>
         <div className="bg-surface-container-lowest border border-surface-container-high rounded-market divide-y divide-surface-container-high">
@@ -116,7 +175,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Account */}
       <section className="space-y-3">
         <h2 className="text-label-lg uppercase text-on-surface-variant">Account</h2>
         <button

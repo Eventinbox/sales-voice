@@ -2,30 +2,9 @@
 import { useState, useEffect } from "react";
 import PriceRangeBar from "@/components/PriceRangeBar";
 import StatusPill from "@/components/StatusPill";
+import TrendIcon from "@/components/TrendIcon";
 import { PriceBenchmark } from "@/lib/types";
 import { fetchPrices } from "@/lib/api";
-
-function TrendIcon({ trend }: { trend: PriceBenchmark['trend'] }) {
-  if (trend === 'up') {
-    return (
-      <svg width="16" height="16" fill="currentColor" className="text-primary" viewBox="0 0 24 24">
-        <path d="M7 14l5-5 5 5H7z" />
-      </svg>
-    );
-  }
-  if (trend === 'down') {
-    return (
-      <svg width="16" height="16" fill="currentColor" className="text-error" viewBox="0 0 24 24">
-        <path d="M7 10l5 5 5-5H7z" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="16" height="16" fill="currentColor" className="text-on-surface-variant" viewBox="0 0 24 24">
-      <rect x="6" y="11" width="12" height="2" />
-    </svg>
-  );
-}
 
 export default function PricesPage() {
   const [prices, setPrices] = useState<PriceBenchmark[]>([]);

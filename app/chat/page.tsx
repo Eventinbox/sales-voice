@@ -1,12 +1,14 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { currentUser } from "@/lib/mock-data";
 import { Message } from "@/lib/types";
 import { fetchMessages, sendMessage } from "@/lib/api";
 import ChatBubble from "@/components/ChatBubble";
 import ActionBar from "@/components/ActionBar";
+import AvatarBadge from "@/components/AvatarBadge";
+import { useProfile } from "@/lib/profile";
 
 export default function ChatPage() {
+  const { profile } = useProfile();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,25 +38,39 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, vendorMessage, assistantMessage]);
     } catch {
       setError("Message didn't send — check the backend is running.");
-      setInputValue(trimmed); // give the text back so nothing's lost
+      setInputValue(trimmed);
     } finally {
       setSending(false);
     }
   }
 
+  const todayDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="flex flex-col h-screen">
       <header className="px-5 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-market flex items-center justify-center text-white font-bold">SV</div>
+          <div className="w-10 h-10 bg-primary rounded-market flex items-center justify-center text-white font-bold">
+            SV
+          </div>
           <h1 className="text-headline-lg text-primary font-bold">Sales Voice</h1>
         </div>
-        <img src={currentUser.avatar} className="w-10 h-10 rounded-full border-2 border-primary" alt="avatar" />
+        {profile && (
+          <AvatarBadge
+            name={profile.name}
+            avatar={profile.avatar}
+            className="w-10 h-10 rounded-full border-2 border-primary bg-surface-container"
+          />
+        )}
       </header>
 
       <div className="flex justify-center mb-6">
         <span className="px-4 py-1 bg-surface-container-high rounded-full text-xs font-bold text-on-surface-variant">
-          Today
+          {todayDate}
         </span>
       </div>
 
@@ -62,9 +78,7 @@ export default function ChatPage() {
         {loading && (
           <p className="text-center text-on-surface-variant text-body-md">Loading conversation...</p>
         )}
-        {error && (
-          <p className="text-center text-error text-body-md">{error}</p>
-        )}
+        {error && <p className="text-center text-error text-body-md">{error}</p>}
         {messages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} />
         ))}
