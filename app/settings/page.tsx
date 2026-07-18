@@ -1,90 +1,148 @@
 "use client";
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import { currentUser } from "@/lib/mock-data";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Currency } from "@/lib/types";
 import Toggle from "@/components/Toggle";
+import { useAuth } from "@/lib/auth";
+import { useProfile } from "@/lib/profile";
+import AvatarBadge from "@/components/AvatarBadge";
 
-const STORAGE_KEY = "sales-voice-settings";
+const STORAGE_PREFIX = "sales-voice-settings";
 
 const currencies: { code: Currency; label: string }[] = [
-  { code: 'NGN', label: '₦ Naira' },
-  { code: 'USD', label: '$ Dollar' },
-  { code: 'GHS', label: '₵ Cedi' },
+  { code: "NGN", label: "₦ Naira" },
+  { code: "USD", label: "$ Dollar" },
+  { code: "GHS", label: "₵ Cedi" },
 ];
 
-function loadSettings() {
+function loadSettings(storageKey: string) {
   if (typeof window === "undefined") {
-    return { currency: 'NGN' as Currency, notificationsEnabled: true, voiceInputEnabled: true };
+    return {
+      currency: "NGN" as Currency,
+      notificationsEnabled: true,
+      voiceInputEnabled: true,
+    };
   }
-  const stored = localStorage.getItem(STORAGE_KEY);
+
+  const stored = localStorage.getItem(storageKey);
   if (stored) {
-    try { return JSON.parse(stored); } catch
+    try {
+      const parsed = JSON.parse(stored) as {
+        currency?: Currency;
+        notificationsEnabled?: boolean;
+        voiceInputEnabled?: boolean;
+      };
+
+      return {
+        currency: parsed.currency ?? "NGN",
+        notificationsEnabled: parsed.notificationsEnabled ?? true,
+        voiceInputEnabled: parsed.voiceInputEnabled ?? true,
+      };
+    } catch {
+      // Fall through to defaults if localStorage was corrupted.
+    }
   }
-  return { currency: 'NGN' as Currency, notificationsEnabled: true, voiceInputEnabled: true };
+
+  return {
+    currency: "NGN" as Currency,
+    notificationsEnabled: true,
+    voiceInputEnabled: true,
+  };
 }
 
 export default function SettingsPage() {
-  const [currency, setCurrency] = useState<Currency>('NGN');
+  const router = useRouter();
+  const { logout } = useAuth();
+  const { profile, isLoading } = useProfile();
+  const [currency, setCurrency] = useState<Currency>("NGN");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [voiceInputEnabled, setVoiceInputEnabled] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
+  const storageKey = profile ? `${STORAGE_PREFIX}:${profile.id}` : STORAGE_PREFIX;
 
   useEffect(() => {
-    const saved = loadSettings();
+    const saved = loadSettings(storageKey);
     setCurrency(saved.currency);
     setNotificationsEnabled(saved.notificationsEnabled);
     setVoiceInputEnabled(saved.voiceInputEnabled);
-  }, []);
+    setHydrated(true);
+  }, [storageKey]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ currency, notificationsEnabled, voiceInputEnabled }));
-  }, [currency, notificationsEnabled, voiceInputEnabled]);
+    if (!hydrated) return;
+    localStorage.setItem(storageKey, JSON.stringify({ currency, notificationsEnabled, voiceInputEnabled }));
+  }, [currency, notificationsEnabled, voiceInputEnabled, hydrated, storageKey]);
+
+  function handleLogout() {
+    logout();
+    router.replace("/login");
+  }
+
+  if (isLoading || !profile) {
+    return (
+      <div className="px-5 py-6 space-y-8 pb-24 md:max-w-2xl md:mx-auto md:px-10 md:py-10 md:pb-10">
+        <div className="rounded-market border border-surface-container-high bg-surface-container-lowest p-6 text-center text-on-surface-variant">
+          Loading profile...
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="px-5 py-6 space-y-8 pb-24">
+    <div className="px-5 py-6 space-y-8 pb-24 md:max-w-2xl md:mx-auto md:px-10 md:py-10 md:pb-10">
       <header className="flex items-center justify-between">
         <h1 className="text-headline-lg font-bold">Settings</h1>
       </header>
 
-      {/* Profile */}
-      <section className="bg-surface-container-lowest border border-surface-container-high rounded-market p-4 flex items-center gap-4">
-        <Image
-          src={currentUser.avatar}
-          alt={currentUser.name}
-          width={64}
-          height={64}
-          className="rounded-full border-2 border-primary"
+      <Link
+        href="/profile"
+        className="bg-surface-container-lowest border border-surface-container-high rounded-market p-4 flex items-center gap-4 hover:bg-surface-container transition-colors"
+      >
+        <AvatarBadge
+          name={profile.name}
+          avatar={profile.avatar}
+          className="w-16 h-16 rounded-full border-2 border-primary bg-surface-container"
         />
-        <div>
-          <p className="text-body-lg font-bold">{currentUser.name}</p>
-          <p className="text-body-md text-on-surface-variant">{currentUser.shopName}</p>
+        <div className="flex-1">
+          <p className="text-body-lg font-bold">{profile.name}</p>
+          <p className="text-body-md text-on-surface-variant">{profile.shopName}</p>
         </div>
-      </section>
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          className="text-on-surface-variant shrink-0"
+        >
+          <path d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
 
-      {/* Currency */}
       <section className="space-y-3">
         <h2 className="text-label-lg uppercase text-on-surface-variant">Currency</h2>
         <div className="flex gap-2">
-          {currencies.map((c) => {
-            const isActive = currency === c.code;
+          {currencies.map((option) => {
+            const isActive = currency === option.code;
             return (
               <button
-                key={c.code}
-                onClick={() => setCurrency(c.code)}
+                key={option.code}
+                onClick={() => setCurrency(option.code)}
                 className={`flex-1 h-[48px] rounded-market text-label-lg font-bold border-2 transition-colors ${
                   isActive
-                    ? 'bg-primary text-on-primary border-primary'
-                    : 'bg-transparent text-on-surface-variant border-outline-variant'
+                    ? "bg-primary text-on-primary border-primary"
+                    : "bg-transparent text-on-surface-variant border-outline-variant"
                 }`}
               >
-                {c.label}
+                {option.label}
               </button>
             );
           })}
         </div>
       </section>
 
-      {/* Preferences */}
       <section className="space-y-3">
         <h2 className="text-label-lg uppercase text-on-surface-variant">Preferences</h2>
         <div className="bg-surface-container-lowest border border-surface-container-high rounded-market divide-y divide-surface-container-high">
@@ -115,6 +173,16 @@ export default function SettingsPage() {
             />
           </div>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-label-lg uppercase text-on-surface-variant">Account</h2>
+        <button
+          onClick={handleLogout}
+          className="w-full h-[48px] rounded-market text-label-lg font-bold border-2 border-error text-error transition-colors hover:bg-error/10"
+        >
+          Log Out
+        </button>
       </section>
     </div>
   );

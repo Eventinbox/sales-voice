@@ -1,46 +1,47 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
-import { mockMessages, currentUser } from "@/lib/mock-data";
 import { Message } from "@/lib/types";
-import { formatTime } from "@/lib/utils";
+import { fetchMessages, sendMessage } from "@/lib/api";
 import ChatBubble from "@/components/ChatBubble";
 import ActionBar from "@/components/ActionBar";
+import AvatarBadge from "@/components/AvatarBadge";
+import { useProfile } from "@/lib/profile";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const { profile } = useProfile();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const idCounter = useRef(0);
+
+  useEffect(() => {
+    fetchMessages()
+      .then(setMessages)
+      .catch(() => setError("Couldn't reach the backend. Is it running on localhost:4000?"))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function handleSend() {
+  async function handleSend() {
     const trimmed = inputValue.trim();
-    if (!trimmed) return;
+    if (!trimmed || sending) return;
 
-    const vendorMessage: Message = {
-      id: `local-${++idCounter.current}`,
-      sender: 'vendor',
-      text: trimmed,
-      timestamp: formatTime(),
-      type: 'text',
-    };
-    setMessages((prev) => [...prev, vendorMessage]);
     setInputValue("");
-
-    setTimeout(() => {
-      const assistantReply: Message = {
-        id: `local-${++idCounter.current}`,
-        sender: 'assistant',
-        text: "Got it! I've noted that down for you.",
-        timestamp: formatTime(),
-        type: 'text',
-      };
-      setMessages((prev) => [...prev, assistantReply]);
-    }, 700);
+    setSending(true);
+    try {
+      const { vendorMessage, assistantMessage } = await sendMessage(trimmed);
+      setMessages((prev) => [...prev, vendorMessage, assistantMessage]);
+    } catch {
+      setError("Message didn't send — check the backend is running.");
+      setInputValue(trimmed);
+    } finally {
+      setSending(false);
+    }
   }
 
   const todayDate = new Date().toLocaleDateString("en-US", {
@@ -53,16 +54,18 @@ export default function ChatPage() {
     <div className="flex flex-col h-screen">
       <header className="px-5 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-market flex items-center justify-center text-white font-bold">SV</div>
+          <div className="w-10 h-10 bg-primary rounded-market flex items-center justify-center text-white font-bold">
+            SV
+          </div>
           <h1 className="text-headline-lg text-primary font-bold">Sales Voice</h1>
         </div>
-        <Image
-          src={currentUser.avatar}
-          alt={currentUser.name}
-          width={40}
-          height={40}
-          className="rounded-full border-2 border-primary"
-        />
+        {profile && (
+          <AvatarBadge
+            name={profile.name}
+            avatar={profile.avatar}
+            className="w-10 h-10 rounded-full border-2 border-primary bg-surface-container"
+          />
+        )}
       </header>
 
       <div className="flex justify-center mb-6">
@@ -72,6 +75,10 @@ export default function ChatPage() {
       </div>
 
       <div className="px-5 flex-1 overflow-y-auto space-y-2 pb-40">
+        {loading && (
+          <p className="text-center text-on-surface-variant text-body-md">Loading conversation...</p>
+        )}
+        {error && <p className="text-center text-error text-body-md">{error}</p>}
         {messages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} />
         ))}

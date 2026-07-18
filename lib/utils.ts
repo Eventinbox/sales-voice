@@ -6,3 +6,8 @@ export function formatTime(date: Date = new Date()): string {
   hours = hours === 0 ? 12 : hours;
   return `${hours}:${minutes} ${ampm}`;
 }
+
+export function formatDateTime(date: Date): string {
+  const datePart = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return `${datePart}, ${formatTime(date)}`;
+}
