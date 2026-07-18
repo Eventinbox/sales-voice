@@ -32,6 +32,7 @@ export interface ShopProfile {
   name: string;
   shopName: string;
   avatar: string;
+  phone: string;
 }
 
 export type Currency = 'NGN' | 'USD' | 'GHS';

@@ -1,11 +1,39 @@
+version: '3.8'
 services:
-  web:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: sales-voice-backend:latest
+    restart: unless-stopped
+    environment:
+      - PORT=4000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: sales-voice:latest
-    ports:
-      - "3000:3000"
+      dockerfile: Dockerfile.frontend
+    image: sales-voice-frontend:latest
+    restart: unless-stopped
     environment:
       - NODE_ENV=production
-    restart: unless-stopped
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

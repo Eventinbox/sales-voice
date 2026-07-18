@@ -1,22 +1,55 @@
 "use client";
-import { mockDebts } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import Button from "@/components/Button";
 import ListRow from "@/components/ListRow";
 import PriceRangeBar from "@/components/PriceRangeBar";
 import StatusPill from "@/components/StatusPill";
-import { useRouter, notFound } from "next/navigation";
+import { DebtEntry } from "@/lib/types";
+import { fetchDebt, updateDebtStatus } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function DebtDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const debt = mockDebts.find(d => d.id === params.id);
-  if (!debt) notFound();
+  const [debt, setDebt] = useState<DebtEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDebt(params.id)
+      .then(setDebt)
+      .catch(() => setError("Couldn't load this debt. Is the backend running on localhost:4000?"))
+      .finally(() => setLoading(false));
+  }, [params.id]);
+
+  async function handleMarkPaid() {
+    if (!debt || updating) return;
+    setUpdating(true);
+    try {
+      const updated = await updateDebtStatus(debt.id, "PAID");
+      setDebt(updated);
+    } catch {
+      setError("Couldn't update this debt right now.");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="px-5 py-6 text-on-surface-variant text-body-md">Loading...</div>;
+  }
+
+  if (error || !debt) {
+    return <div className="px-5 py-6 text-error text-body-md">{error ?? "Debt not found."}</div>;
+  }
+
   const isPaid = debt.status === 'PAID';
 
   return (
     <div className="px-5 py-6 space-y-8">
       <header className="flex items-center gap-4">
-        <button aria-label="Go back" onClick={() => router.back()} className="p-2">
-          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19l-7-7 7-7" /></svg>
+        <button onClick={() => router.back()} className="p-2">
+          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" /></svg>
         </button>
         <div className="flex items-center gap-3">
           <h1 className="text-headline-lg font-bold">{debt.personName}'s Debt</h1>
@@ -64,8 +97,8 @@ export default function DebtDetailPage({ params }: { params: { id: string } }) {
                 {debt.status}
               </span>
             </div>
-            <button aria-label="More info" className="p-2 text-outline-variant">
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <button className="p-2 text-outline-variant">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </button>
           </div>
         </div>
@@ -80,7 +113,10 @@ export default function DebtDetailPage({ params }: { params: { id: string } }) {
       </section>
 
       <div className="fixed bottom-24 left-5 right-5 space-y-3">
-        <Button label="✓ Paid in Full" />
+        <Button
+          label={isPaid ? "✓ Paid in Full" : updating ? "Saving..." : "Mark Paid in Full"}
+          onClick={handleMarkPaid}
+        />
         <Button label="Add Payment" variant="outline" />
       </div>
     </div>

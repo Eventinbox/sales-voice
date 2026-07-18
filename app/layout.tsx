@@ -1,12 +1,8 @@
 import { Public_Sans } from 'next/font/google';
 import './globals.css';
-import BottomTabBar from '@/components/BottomTabBar';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'Sales Voice — Mama Tolu Provisions',
-  description: 'Track daily sales, debts, and market prices for your shop.',
-};
+import { AuthProvider } from '@/lib/auth';
+import { ProfileProvider } from '@/lib/profile';
+import AppShell from '@/components/AppShell';
 
 const publicSans = Public_Sans({
   subsets: ['latin'],
@@ -17,9 +13,12 @@ const publicSans = Public_Sans({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${publicSans.variable} font-sans bg-background text-on-background max-w-md mx-auto min-h-screen relative pb-20`}>
-        {children}
-        <BottomTabBar />
+      <body className={`${publicSans.variable} font-sans bg-background text-on-background min-h-screen relative`}>
+        <AuthProvider>
+          <ProfileProvider>
+            <AppShell>{children}</AppShell>
+          </ProfileProvider>
+        </AuthProvider>
       </body>
     </html>
   );

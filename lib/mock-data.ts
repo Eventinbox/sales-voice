@@ -4,6 +4,7 @@ export const currentUser: ShopProfile = {
   name: "Mama Tolu",
   shopName: "Mama Tolu Provisions",
   avatar: "https://i.pravatar.cc/150?u=mama-tolu",
+  phone: "+234 803 123 4567",
 };
 
 export const mockSettings: AppSettings = {
@@ -23,7 +24,7 @@ export const mockMessages: Message[] = [
   {
     id: '2',
     sender: 'vendor',
-    text: "I just sold 2 mudu of garri to Bisi for 4,000 Naira",
+    text: "I just sold 2 mudu of garri to a customer for 4,000 Naira",
     timestamp: '08:15 AM',
     type: 'text',
   },
@@ -38,14 +39,14 @@ export const mockMessages: Message[] = [
   {
     id: '4',
     sender: 'vendor',
-    text: "Iya Risi took a bag of rice on credit. Total is 45,000 Naira",
+    text: "A customer took a bag of rice on credit. Total is 45,000 Naira",
     timestamp: '09:30 AM',
     type: 'text',
   },
   {
     id: '5',
     sender: 'assistant',
-    text: "Recorded. ₦45,000 added to Iya Risi's debt account.",
+    text: "Recorded. ₦45,000 added to the customer's debt account.",
     timestamp: '09:31 AM',
     type: 'confirmation',
     confirmationAmount: '45,000',
@@ -53,9 +54,9 @@ export const mockMessages: Message[] = [
 ];
 
 export const mockDebts: DebtEntry[] = [
-  { id: 'd1', personName: 'Bisi', item: 'Garri (2 mudu)', amount: 2500, date: '2026-07-10 10:15 AM', type: 'customer', status: 'UNPAID', note: "Promised to pay on Friday" },
-  { id: 'd2', personName: 'Iya Risi', item: 'Rice (1 bag)', amount: 45000, date: '2026-07-11 09:30 AM', type: 'customer', status: 'UNPAID' },
-  { id: 's1', personName: 'Mallam Abu', item: 'Bulk Rice Supply', amount: 120000, date: '2026-06-28 04:00 PM', type: 'supplier', status: 'UNPAID', note: "Due by end of month" },
+  { id: 'd1', personName: 'Customer One', item: 'Garri (2 mudu)', amount: 2500, date: '2026-07-10 10:15 AM', type: 'customer', status: 'UNPAID', note: "Promised to pay on Friday" },
+  { id: 'd2', personName: 'Customer Two', item: 'Rice (1 bag)', amount: 45000, date: '2026-07-11 09:30 AM', type: 'customer', status: 'UNPAID' },
+  { id: 's1', personName: 'Supplier One', item: 'Bulk Rice Supply', amount: 120000, date: '2026-06-28 04:00 PM', type: 'supplier', status: 'UNPAID', note: "Due by end of month" },
 ];
 
 export const mockPrices: PriceBenchmark[] = [
